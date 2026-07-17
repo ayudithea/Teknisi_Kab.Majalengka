@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Teknisi Majalengka</title>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef3f8;color:#333}
+header{
+background:linear-gradient(135deg,#0D47A1,#1976D2);
+color:#fff;padding:28px 20px;text-align:center;
+font-size:30px;font-weight:bold;
+box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.container{max-width:1200px;margin:auto;padding:18px}
+.topbar{
+display:flex;gap:12px;flex-wrap:wrap;
+background:#fff;padding:16px;
+border-radius:18px;
+box-shadow:0 6px 18px rgba(0,0,0,.08);
+margin-bottom:20px}
+.topbar input,.topbar select{
+flex:1;min-width:220px;
+padding:13px 15px;
+border:1px solid #d7d7d7;
+border-radius:12px;
+font-size:15px}
+.topbar input:focus,.topbar select:focus{
+outline:none;border-color:#1976D2;
+box-shadow:0 0 0 3px rgba(25,118,210,.15)}
+button{
+background:#1976D2;color:#fff;
+border:none;border-radius:12px;
+padding:12px 18px;
+font-weight:bold;cursor:pointer;
+transition:.2s}
+button:hover{transform:translateY(-2px)}
+.logout{background:#d32f2f}
+.grid{display:grid;gap:18px}
+.card{
+background:#fff;
+border-radius:18px;
+padding:18px;
+border-top:5px solid #1976D2;
+box-shadow:0 8px 22px rgba(0,0,0,.08);
+transition:.2s}
+.card:hover{transform:translateY(-3px)}
+.card h3{margin:0;color:#0D47A1;font-size:20px}
+.card p{margin:8px 0;line-height:1.5}
+.badge{
+display:inline-block;
+background:#E3F2FD;
+color:#1565C0;
+padding:6px 12px;
+border-radius:30px;
+font-size:12px;
+font-weight:bold}
+.actions{display:flex;gap:10px;margin-top:14px}
+.btn{
+flex:1;
+text-align:center;
+padding:12px;
+border-radius:12px;
+text-decoration:none;
+font-weight:bold;
+color:#fff}
+.wa{background:#25D366}
+.detail{background:#1976D2}
+@media(min-width:768px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+
+<body>
+
+<header>
+📱 DATA TEKNISI HP MAJALENGKA
+</header>
+
+<div class="container">
+
+<div class="topbar">
+    <button id="btnTambah" onclick="cekLogin()">➕ Tambah Data</button>
+    <button id="btnLogout" class="logout" onclick="logout()" style="display:none;">Logout</button>
+
+    <input type="text" id="search" placeholder="🔍 Cari teknisi...">
+
+    <select id="filter">
+        <option value="">Semua Bidang</option>
+        <option value="android">Android</option>
+        <option value="iphone">iPhone</option>
+    </select>
+</div>
+
+<div id="infoBox" style="background:#fff;border-radius:14px;padding:12px 16px;margin-bottom:16px;
+box-shadow:0 4px 12px rgba(0,0,0,.08);font-weight:bold;line-height:1.8">
+📊 Total Teknisi: <span id="totalTeknisi">0</span><br>
+🔍 Hasil Pencarian: <span id="hasilTeknisi">0</span><br>
+📍 Kecamatan Anda: <span id="kecamatanUser">-</span>
+</div>
+
+<div id="cards" class="grid"></div>
+
+</div>
+
+<script>
+// 🔥 FIREBASE CONFIG
+const firebaseConfig = {
+    apiKey: "AIzaSyBrSk6ZyoxvKAEQFFkEHMT-PenWSSsFSdQ",
+    authDomain: "ic-reference-teknisi.firebaseapp.com",
+    projectId: "ic-reference-teknisi",
+    storageBucket: "ic-reference-teknisi.appspot.com",
+    messagingSenderId: "376962038194",
+    appId: "1:376962038194:web:fa8475c2e097f5e0548cab"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// 🔐 CEK LOGIN
+function cekLogin(){
+    if(auth.currentUser){
+        window.open("https://forms.gle/2GLPHQdLkQJaTvnh7");
+    }else{
+        window.location.href = "login.html";
+    }
+}
+
+// 🔓 LOGOUT
+function logout(){
+    auth.signOut().then(()=>{
+        alert("Logout berhasil");
+        location.reload();
+    });
+}
+
+// 🔄 AUTO DETECT LOGIN
+auth.onAuthStateChanged(user => {
+    if(user){
+        document.getElementById("btnLogout").style.display = "inline-block";
+    }else{
+        document.getElementById("btnLogout").style.display = "none";
+    }
+});
+
+// ================= DATA =================
+
+const sheetURL = "https://docs.google.com/spreadsheets/d/19AfachAS9ZyNuut61RB1wqyI_AI6BsmNT1SIWhmSIn8/gviz/tq?tqx=out:csv&sheet=DATA%20TEKNISI";
+
+let allData = [];
+
+// PARSER
+function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let current = '';
+    let insideQuotes = false;
+
+    text = text.replace(/\r/g, '');
+
+    for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+
+        if (char === '"') {
+            insideQuotes = !insideQuotes;
+        } else if (char === ',' && !insideQuotes) {
+            row.push(current);
+            current = '';
+        } else if (char === '\n' && !insideQuotes) {
+            row.push(current);
+            rows.push(row);
+            row = [];
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+
+    if (current !== '' || row.length > 0) {
+        row.push(current);
+        rows.push(row);
+    }
+
+    return rows;
+}
+
+// LOAD DATA
+fetch(sheetURL)
+.then(res => res.text())
+.then(csv => {
+    let rows = parseCSV(csv);
+    rows.shift();
+
+    allData = rows.map(r => ({
+        nama: (r[1] || "").replace(/"/g, "").trim(),
+        alamat: (r[2] || "").replace(/"/g, "").trim(),
+        bidang: (r[3] || "").replace(/"/g, "").trim(),
+        wa: (r[4] || "").replace(/"/g, "").trim(),
+        sosmed: (r[5] || "").replace(/"/g, "").trim(),
+        maps: (r[6] || "").replace(/"/g, "").trim()
+    }));
+
+    render(allData);
+});
+
+// RENDER
+function render(data){
+    const container = document.getElementById("cards");
+    container.innerHTML = "";
+
+    data.forEach(d => {
+        if(!d.nama) return;
+
+        let wa = (d.wa || "").replace(/[^0-9]/g, "").replace(/^0/, "62");
+
+        let el = document.createElement("div");
+        el.className = "card";
+
+        el.innerHTML = `
+            <h3>${d.nama}</h3>
+            <p>📍 ${d.alamat}</p>
+            <p><span class="badge">${d.bidang}</span></p>
+            <p>🌐 ${d.sosmed || "-"}</p>
+
+            <div class="actions">
+                <a class="btn wa" href="https://wa.me/${wa}" target="_blank">💬 WhatsApp</a>
+                <a class="btn detail" href="${d.maps || '#'}" target="_blank">📍 Rute</a>
+            </div>
+        `;
+
+        container.appendChild(el);
+    });
+}
+
+// FILTER
+document.getElementById("search").addEventListener("input", applyFilter);
+document.getElementById("filter").addEventListener("change", applyFilter);
+
+function applyFilter(){
+    let key = document.getElementById("search").value.toLowerCase();
+    let filter = document.getElementById("filter").value;
+
+    let result = allData.filter(d => {
+        let matchText =
+            (d.nama && d.nama.toLowerCase().includes(key)) ||
+            (d.alamat && d.alamat.toLowerCase().includes(key)) ||
+            (d.bidang && d.bidang.toLowerCase().includes(key));
+
+        let matchFilter = !filter || (d.bidang && d.bidang.toLowerCase().includes(filter));
+
+        return matchText && matchFilter;
+    });
+
+    render(result);
+}
+
+// ===== FITUR KECAMATAN + JUMLAH =====
+let userDistrict="";
+function updateInfo(data){
+ document.getElementById("totalTeknisi").textContent=allData.filter(x=>x.nama).length;
+ document.getElementById("hasilTeknisi").textContent=data.filter(x=>x.nama).length;
+ document.getElementById("kecamatanUser").textContent=userDistrict||"-";
+}
+
+async function detectDistrict(){
+ if(!navigator.geolocation){
+   document.getElementById("kecamatanUser").textContent="GPS tidak tersedia";
+   return;
+ }
+ navigator.geolocation.getCurrentPosition(async(pos)=>{
+   try{
+     const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+     const j=await r.json();
+     const a=j.address||{};
+
+     // Prioritas: Desa -> Kelurahan -> Kecamatan
+     userDistrict=(
+       a.village ||
+       a.hamlet ||
+       a.suburb ||
+       a.neighbourhood ||
+       a.subdistrict ||
+       a.city_district ||
+       ""
+     ).toLowerCase().trim();
+
+     document.getElementById("kecamatanUser").textContent =
+       userDistrict ? userDistrict : "Tidak terdeteksi";
+
+     applyFilter();
+
+   }catch(e){
+     document.getElementById("kecamatanUser").textContent="Gagal membaca lokasi";
+   }
+ },()=>{
+   document.getElementById("kecamatanUser").textContent="Izin lokasi ditolak";
+ },{
+   enableHighAccuracy:true,
+   timeout:15000,
+   maximumAge:0
+ });
+}
+
+const _render=render;
+render=function(data){
+ if(userDistrict){
+   data=[...data].sort((a,b)=>{
+      const aa=(a.alamat||"").toLowerCase().includes(userDistrict);
+      const bb=(b.alamat||"").toLowerCase().includes(userDistrict);
+      return aa===bb?0:(aa?-1:1);
+   });
+ }
+ _render(data);
+ updateInfo(data);
+ const cards=document.querySelectorAll(".card");
+ data.forEach((d,i)=>{
+   if(i>=cards.length)return;
+   if(userDistrict && (d.alamat||"").toLowerCase().includes(userDistrict)){
+      const h=cards[i].querySelector("h3");
+      if(h && !h.innerHTML.includes("Kecamatan Anda")){
+         h.innerHTML+=' <span class="badge">⭐ Kecamatan Anda</span>';
+      }
+   }
+ });
+}
+setTimeout(detectDistrict,1000);
+
+</script>
+</body>
+</html>
