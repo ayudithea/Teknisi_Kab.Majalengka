@@ -262,6 +262,51 @@ select,
 button{
     transition:.25s;
 }
+ /* ===== FORCE DARK MODE ===== */
+
+body.dark{
+    background:#121212 !important;
+    color:#f1f1f1 !important;
+}
+
+body.dark div[style*="background:#fff"],
+body.dark div[style*="background: #fff"]{
+    background:#242424 !important;
+    color:#fff !important;
+    border-color:#444 !important;
+}
+
+body.dark div[style*="background:white"],
+body.dark div[style*="background: white"]{
+    background:#242424 !important;
+    color:#fff !important;
+}
+
+body.dark span,
+body.dark p,
+body.dark h1,
+body.dark h2,
+body.dark h3,
+body.dark h4,
+body.dark label{
+    color:#f1f1f1 !important;
+}
+
+body.dark input,
+body.dark select{
+    background:#2b2b2b !important;
+    color:#fff !important;
+    border:1px solid #555 !important;
+}
+
+body.dark #infoBox{
+    background:#242424 !important;
+    color:#fff !important;
+}
+
+body.dark .topbar{
+    background:#1f1f1f !important;
+}
 </style>
 </head>
 
