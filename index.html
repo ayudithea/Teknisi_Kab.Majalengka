@@ -6,8 +6,44 @@
 <title>Data Teknisi Majalengka</title>
 
 <!-- FIREBASE -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js">
+// ===== Popup Browser Facebook =====
+function isFacebookBrowser(){
+ return /FBAN|FBAV|Instagram/i.test(navigator.userAgent||"");
+}
+function tampilPopupBrowser(){
+ const b=document.createElement('div');
+ b.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:99999';
+ b.innerHTML=`<div style="background:#fff;width:90%;max-width:360px;padding:20px;border-radius:16px;text-align:center">
+ <h3>📍 Akses Lokasi Terbatas</h3>
+ <p>Browser Facebook sering menolak akses lokasi.<br>Silakan buka di Chrome atau masukkan desa/kecamatan.</p>
+ <button onclick="location.href='intent://'+location.host+location.pathname+'#Intent;scheme=https;package=com.android.chrome;end'" style="width:100%;padding:12px;background:#16a34a;color:#fff;border:none;border-radius:10px">🌐 Buka di Chrome</button>
+ <button onclick="document.getElementById('manualBox')&&(document.getElementById('manualBox').style.display='block');this.closest('div').parentElement.remove();" style="width:100%;margin-top:8px;padding:12px;background:#1976D2;color:#fff;border:none;border-radius:10px">✍️ Masukkan Desa/Kecamatan</button>
+ </div>`;
+ document.body.appendChild(b);
+}
+window.addEventListener('load',()=>{if(isFacebookBrowser())setTimeout(tampilPopupBrowser,600);});
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js">
+// ===== Popup Browser Facebook =====
+function isFacebookBrowser(){
+ return /FBAN|FBAV|Instagram/i.test(navigator.userAgent||"");
+}
+function tampilPopupBrowser(){
+ const b=document.createElement('div');
+ b.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:99999';
+ b.innerHTML=`<div style="background:#fff;width:90%;max-width:360px;padding:20px;border-radius:16px;text-align:center">
+ <h3>📍 Akses Lokasi Terbatas</h3>
+ <p>Browser Facebook sering menolak akses lokasi.<br>Silakan buka di Chrome atau masukkan desa/kecamatan.</p>
+ <button onclick="location.href='intent://'+location.host+location.pathname+'#Intent;scheme=https;package=com.android.chrome;end'" style="width:100%;padding:12px;background:#16a34a;color:#fff;border:none;border-radius:10px">🌐 Buka di Chrome</button>
+ <button onclick="document.getElementById('manualBox')&&(document.getElementById('manualBox').style.display='block');this.closest('div').parentElement.remove();" style="width:100%;margin-top:8px;padding:12px;background:#1976D2;color:#fff;border:none;border-radius:10px">✍️ Masukkan Desa/Kecamatan</button>
+ </div>`;
+ document.body.appendChild(b);
+}
+window.addEventListener('load',()=>{if(isFacebookBrowser())setTimeout(tampilPopupBrowser,600);});
+
+</script>
 
 <style>
 *{box-sizing:border-box}
@@ -266,46 +302,18 @@ function updateInfo(data){
  document.getElementById("hasilTeknisi").textContent=data.filter(x=>x.nama).length;
  document.getElementById("kecamatanUser").textContent=userDistrict||"-";
 }
-
 async function detectDistrict(){
- if(!navigator.geolocation){
-   document.getElementById("kecamatanUser").textContent="GPS tidak tersedia";
-   return;
- }
+ if(!navigator.geolocation) return;
  navigator.geolocation.getCurrentPosition(async(pos)=>{
    try{
-     const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
-     const j=await r.json();
-     const a=j.address||{};
-
-     // Prioritas: Desa -> Kelurahan -> Kecamatan
-     userDistrict=(
-       a.village ||
-       a.hamlet ||
-       a.suburb ||
-       a.neighbourhood ||
-       a.subdistrict ||
-       a.city_district ||
-       ""
-     ).toLowerCase().trim();
-
-     document.getElementById("kecamatanUser").textContent =
-       userDistrict ? userDistrict : "Tidak terdeteksi";
-
-     applyFilter();
-
-   }catch(e){
-     document.getElementById("kecamatanUser").textContent="Gagal membaca lokasi";
-   }
- },()=>{
-   document.getElementById("kecamatanUser").textContent="Izin lokasi ditolak";
- },{
-   enableHighAccuracy:true,
-   timeout:15000,
-   maximumAge:0
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+    const j=await r.json();
+    const a=j.address||{};
+    userDistrict=(a.city_district||a.suburb||a.county||"").toLowerCase();
+    applyFilter();
+   }catch(e){}
  });
 }
-
 const _render=render;
 render=function(data){
  if(userDistrict){
@@ -329,6 +337,24 @@ render=function(data){
  });
 }
 setTimeout(detectDistrict,1000);
+
+
+// ===== Popup Browser Facebook =====
+function isFacebookBrowser(){
+ return /FBAN|FBAV|Instagram/i.test(navigator.userAgent||"");
+}
+function tampilPopupBrowser(){
+ const b=document.createElement('div');
+ b.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:99999';
+ b.innerHTML=`<div style="background:#fff;width:90%;max-width:360px;padding:20px;border-radius:16px;text-align:center">
+ <h3>📍 Akses Lokasi Terbatas</h3>
+ <p>Browser Facebook sering menolak akses lokasi.<br>Silakan buka di Chrome atau masukkan desa/kecamatan.</p>
+ <button onclick="location.href='intent://'+location.host+location.pathname+'#Intent;scheme=https;package=com.android.chrome;end'" style="width:100%;padding:12px;background:#16a34a;color:#fff;border:none;border-radius:10px">🌐 Buka di Chrome</button>
+ <button onclick="document.getElementById('manualBox')&&(document.getElementById('manualBox').style.display='block');this.closest('div').parentElement.remove();" style="width:100%;margin-top:8px;padding:12px;background:#1976D2;color:#fff;border:none;border-radius:10px">✍️ Masukkan Desa/Kecamatan</button>
+ </div>`;
+ document.body.appendChild(b);
+}
+window.addEventListener('load',()=>{if(isFacebookBrowser())setTimeout(tampilPopupBrowser,600);});
 
 </script>
 </body>
